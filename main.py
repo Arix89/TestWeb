@@ -2,31 +2,28 @@ import os
 import flet as ft
 
 def main(page: ft.Page):
-    page.title = "Мое приложение на Railway"
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
-    
-    counter = 0
-    
-    def button_clicked(e):
-        nonlocal counter
-        counter += 1
-        text_field.value = f"Зачетов по физике {counter} шт"
+    page.title = "Flet Chat"
+
+    # subscribe to broadcast messages
+    def on_message(msg):
+        messages.controls.append(ft.Text(msg))
         page.update()
 
-    text_field = ft.Text(size=20, weight="bold")
+    page.pubsub.subscribe(on_message)
+
+    def send_click(e):
+        page.pubsub.send_all(f"{user.value}: {message.value}")
+        # clean up the form
+        message.value = ""
+        page.update()
+
+    messages = ft.Column()
+    user = ft.TextField(hint_text="Your name", width=150)
+    message = ft.TextField(hint_text="Your message...", expand=True)  # fill all the space
+    send = ft.ElevatedButton("Send", on_click=send_click)
+    page.add(messages, ft.Row(controls=[user, message, send]))
     
-    page.add(
-        ft.Column([
-            ft.Text("🚀 Удачи на физике!", size=24),
-            ft.ElevatedButton("Нажми меня", on_click=button_clicked),
-            text_field,
-        ], alignment=ft.MainAxisAlignment.CENTER)
-    )
-'''
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    ft.app(target=main, port=port, host="0.0.0.0", view=None)
-'''    
 if __name__ == "__main__":
 
     ft.app(target=main)
+
