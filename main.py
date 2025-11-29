@@ -5,9 +5,11 @@ chats = {}
 
 def main(page: ft.Page):
     page.title = "Flet Chat System"
-    page.padding = 20
-    page.spacing = 10
-
+    page.padding = 0
+    page.spacing = 0
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    
     # Элементы интерфейса
     chat_name_input = ft.TextField(label="Название чата", width=300)
     chat_password_input = ft.TextField(label="Пароль чата", password=True, width=300)
@@ -30,34 +32,78 @@ def main(page: ft.Page):
         page.clean()
         
         # Создаем список доступных чатов
-        chats_list = ft.Column()
+        chats_list = ft.Column(scroll=ft.ScrollMode.ADAPTIVE)
         for chat_name, chat_data in chats.items():
             chats_list.controls.append(
-                ft.Text(f"• {chat_name} ({len(chat_data['users'])} пользователей)")
+                ft.Container(
+                    content=ft.Text(f"• {chat_name} ({len(chat_data['users'])} пользователей)"),
+                    padding=5
+                )
             )
         
-        page.add(
-            ft.Text("Система чатов", size=24, weight=ft.FontWeight.BOLD),
-            status_text,
-            ft.Container(height=20),
-            
-            ft.Text("Доступные чаты:", size=16, weight=ft.FontWeight.BOLD),
-            chats_list if chats else ft.Text("Чатов пока нет"),
-            ft.Container(height=20),
-            
-            ft.Text("Создать новый чат:", size=18, weight=ft.FontWeight.BOLD),
-            chat_name_input,
-            chat_password_input,
-            ft.ElevatedButton("Создать чат", on_click=create_chat, width=200),
-            
-            ft.Container(height=30),
-            
-            ft.Text("Подключиться к чату:", size=18, weight=ft.FontWeight.BOLD),
-            join_chat_name_input,
-            join_chat_password_input,
-            user_name_input,
-            ft.ElevatedButton("Подключиться", on_click=join_chat, width=200)
+        main_content = ft.Container(
+            content=ft.Column([
+                ft.Text("Система чатов", size=24, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
+                status_text,
+                ft.Container(height=20),
+                
+                ft.Text("Доступные чаты:", size=16, weight=ft.FontWeight.BOLD),
+                ft.Container(
+                    content=chats_list if chats else ft.Text("Чатов пока нет"),
+                    height=150,
+                    border=ft.border.all(1),
+                    padding=10,
+                    border_radius=10
+                ),
+                ft.Container(height=20),
+                
+                ft.Text("Создать новый чат:", size=18, weight=ft.FontWeight.BOLD),
+                chat_name_input,
+                chat_password_input,
+                ft.Container(
+                    content=ft.ElevatedButton("Создать чат", on_click=create_chat, width=200),
+                    alignment=ft.alignment.center
+                ),
+                
+                ft.Container(height=30),
+                
+                ft.Text("Подключиться к чату:", size=18, weight=ft.FontWeight.BOLD),
+                join_chat_name_input,
+                join_chat_password_input,
+                user_name_input,
+                ft.Container(
+                    content=ft.ElevatedButton("Подключиться", on_click=join_chat, width=200),
+                    alignment=ft.alignment.center
+                )
+            ], 
+            scroll=ft.ScrollMode.ADAPTIVE,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=20,
+            width=400,
+            alignment=ft.alignment.center
         )
+        
+        # Обертка для свайпа
+        swipe_container = ft.GestureDetector(
+            content=main_content,
+            on_vertical_drag_update=lambda e: handle_swipe(e),
+        )
+        
+        page.add(
+            ft.Container(
+                content=swipe_container,
+                expand=True,
+                alignment=ft.alignment.center
+            )
+        )
+
+    def handle_swipe(e):
+        # Обработка свайпа вниз для обновления
+        if abs(e.delta_y) > 50:  # Минимальная дистанция свайпа
+            if e.delta_y > 0:
+                # Свайп вниз - обновляем список чатов
+                show_main_menu()
+            # Свайп вверх тоже можно обработать при необходимости
 
     def create_chat(e):
         chat_name = chat_name_input.value.strip()
@@ -82,7 +128,7 @@ def main(page: ft.Page):
             'password': password,
             'messages': [],
             'users': set(),
-            'subscribers': set()  # Храним подписчиков этого чата
+            'subscribers': set()
         }
         
         status_text.value = f"Чат '{chat_name}' успешно создан!"
@@ -110,8 +156,6 @@ def main(page: ft.Page):
             page.update()
             return
         
-        # Сохраняем текущий чат и пользователя
-        global current_chat_name, current_user_name
         current_chat_name = chat_name
         current_user_name = user_name
             
@@ -121,9 +165,7 @@ def main(page: ft.Page):
     def show_chat_interface(chat_name, user_name):
         page.clean()
         
-        # Функция для обработки сообщений ТОЛЬКО этого чата
         def on_chat_message(msg):
-            # Проверяем, что сообщение для этого чата
             if msg.get('chat_name') == chat_name:
                 current_time = datetime.now().strftime("%H:%M")
                 message_text = f"{msg['user']}: {msg['text']}"
@@ -145,29 +187,24 @@ def main(page: ft.Page):
                 messages.scroll_to(offset=-1, duration=300)
                 page.update()
 
-        # Подписываемся на сообщения
         page.pubsub.subscribe(on_chat_message)
 
         def send_message(e):
             text = message_input.value.strip()
             if text:
-                # Создаем сообщение с идентификатором чата
                 message_data = {
-                    'chat_name': chat_name,  # Важно: указываем для какого чата сообщение
+                    'chat_name': chat_name,
                     'user': user_name,
                     'text': text,
                     'time': datetime.now().strftime("%H:%M")
                 }
                 
-                # Отправляем сообщение всем подписчикам
                 page.pubsub.send_all(message_data)
-                
-                # Сохраняем сообщение в истории этого чата
                 chats[chat_name]['messages'].append(message_data)
                 message_input.value = ""
                 page.update()
 
-        # Загружаем историю ТОЛЬКО этого чата
+        # Загружаем историю чата
         for msg in chats[chat_name]['messages']:
             current_time = msg.get('time', datetime.now().strftime("%H:%M"))
             message_text = f"{msg['user']}: {msg['text']}"
@@ -187,42 +224,75 @@ def main(page: ft.Page):
             )
             messages.controls.append(message_container)
 
-        # Интерфейс чата
-        page.add(
-            ft.Row([
-                ft.Text(f"Чат: {chat_name}", size=20, weight=ft.FontWeight.BOLD, expand=True),
-                ft.Text(f"Вы: {user_name}"),
-                ft.ElevatedButton("Выйти", on_click=lambda e: exit_chat(chat_name, user_name))
-            ]),
+        # Интерфейс чата с адаптацией для мобильных
+        chat_content = ft.Column([
+            ft.Container(
+                content=ft.Row([
+                    ft.Column([
+                        ft.Text(f"Чат: {chat_name}", size=18, weight=ft.FontWeight.BOLD),
+                        ft.Text(f"Вы: {user_name}", size=12),
+                    ], expand=True),
+                    ft.ElevatedButton("Выйти", on_click=lambda e: exit_chat(chat_name, user_name))
+                ]),
+                padding=15,
+                border=ft.border.only(bottom=ft.border.BorderSide(1))
+            ),
             
             ft.Container(
                 content=messages,
                 expand=True,
-                border=ft.border.all(1)
             ),
             
-            ft.Row([
-                message_input,
-                ft.ElevatedButton("Отправить", on_click=send_message)
-            ])
+            ft.Container(
+                content=ft.Row([
+                    message_input,
+                    ft.ElevatedButton("Отправить", on_click=send_message)
+                ], vertical_alignment=ft.CrossAxisAlignment.END),
+                padding=15,
+                border=ft.border.only(top=ft.border.BorderSide(1))
+            )
+        ], expand=True)
+        
+        # Обертка для свайпа в чате
+        chat_swipe_container = ft.GestureDetector(
+            content=chat_content,
+            on_vertical_drag_update=lambda e: handle_chat_swipe(e, chat_name, user_name),
+        )
+        
+        page.add(
+            ft.Container(
+                content=chat_swipe_container,
+                expand=True
+            )
         )
         
         # Прокручиваем к последнему сообщению
         if messages.controls:
             messages.scroll_to(offset=-1, duration=0)
 
+    def handle_chat_swipe(e, chat_name, user_name):
+        # Свайп вниз для выхода из чата
+        if e.delta_y > 100:  # Свайп вниз на значительное расстояние
+            exit_chat(chat_name, user_name)
+
     def exit_chat(chat_name, user_name):
-        # Удаляем пользователя из чата
         if chat_name in chats and user_name in chats[chat_name]['users']:
             chats[chat_name]['users'].remove(user_name)
         
-        # Возвращаем в главное меню
         show_main_menu()
+
+    # Начальная настройка страницы
+    page.on_resize = lambda e: handle_resize()
+    
+    def handle_resize():
+        # Адаптация под разные размеры экрана
+        page.update()
 
     show_main_menu()
     
 if __name__ == "__main__":
 
     ft.app(target=main)
+
 
 
