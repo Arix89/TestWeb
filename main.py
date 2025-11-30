@@ -64,7 +64,7 @@ def main(page: ft.Page):
                             color=ft.Colors.BLUE
                         ),
                         ft.Text(
-                            "Общайтесь легко и безопасно",
+                            "",
                             size=16,
                             text_align=ft.TextAlign.CENTER,
                             color=ft.Colors.GREY_600
@@ -73,68 +73,34 @@ def main(page: ft.Page):
                     padding=ft.padding.only(bottom=40)
                 ),
                 
-                # Карточки выбора действия
-                ft.ResponsiveRow(
-                    [
-                        # Создать чат
-                        ft.Container(
-                            content=ft.Card(
-                                content=ft.Container(
-                                    content=ft.Column([
-                                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINED, size=48, color=ft.Colors.BLUE),
-                                        ft.Text("Создать чат", size=20, weight=ft.FontWeight.W_600),
-                                        ft.Text("Создайте новый чат для общения", size=14, color=ft.Colors.GREY_600),
-                                        ft.Container(height=20),
-                                        ft.FilledButton(
-                                            "Создать",
-                                            on_click=lambda e: show_create_chat_screen(),
-                                            style=ft.ButtonStyle(
-                                                shape=ft.RoundedRectangleBorder(radius=12),
-                                                padding=20
-                                            )
-                                        )
-                                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
-                                    padding=30,
-                                    alignment=ft.alignment.center
-                                ),
-                                elevation=3
-                            ),
-                            col={"sm": 12, "md": 6},
-                            padding=10
+                # Кнопка создания чата
+                ft.Container(
+                    content=ft.Card(
+                        content=ft.Container(
+                            content=ft.Column([
+                                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINED, size=48, color=ft.Colors.BLUE),
+                                ft.Text("Создать чат", size=20, weight=ft.FontWeight.W_600),
+                                ft.Text("Создайте новый чат для общения", size=14, color=ft.Colors.GREY_600),
+                                ft.Container(height=20),
+                                ft.FilledButton(
+                                    "Создать",
+                                    on_click=lambda e: show_create_chat_screen(),
+                                    style=ft.ButtonStyle(
+                                        shape=ft.RoundedRectangleBorder(radius=12),
+                                        padding=20
+                                    )
+                                )
+                            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
+                            padding=30,
+                            alignment=ft.alignment.center
                         ),
-                        
-                        # Войти в чат
-                        ft.Container(
-                            content=ft.Card(
-                                content=ft.Container(
-                                    content=ft.Column([
-                                        ft.Icon(ft.Icons.LOGIN_OUTLINED, size=48, color=ft.Colors.GREEN),
-                                        ft.Text("Войти в чат", size=20, weight=ft.FontWeight.W_600),
-                                        ft.Text("Подключитесь к существующему чату", size=14, color=ft.Colors.GREY_600),
-                                        ft.Container(height=20),
-                                        ft.FilledButton(
-                                            "Войти",
-                                            on_click=lambda e: show_join_chat_screen(),
-                                            style=ft.ButtonStyle(
-                                                shape=ft.RoundedRectangleBorder(radius=12),
-                                                padding=20,
-                                                bgcolor=ft.Colors.GREEN
-                                            )
-                                        )
-                                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
-                                    padding=30,
-                                    alignment=ft.alignment.center
-                                ),
-                                elevation=3
-                            ),
-                            col={"sm": 12, "md": 6},
-                            padding=10
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER
+                        elevation=3
+                    ),
+                    width=400,
+                    padding=10
                 ),
                 
-                # Список доступных чатов (если есть)
+                # Список доступных чатов
                 ft.Container(
                     content=ft.Column([
                         ft.Text("Доступные чаты", size=18, weight=ft.FontWeight.W_600, text_align=ft.TextAlign.CENTER),
@@ -142,7 +108,7 @@ def main(page: ft.Page):
                             content=create_chats_list(),
                             padding=10
                         )
-                    ]) if chats else ft.Container(),
+                    ]),
                     padding=ft.padding.only(top=40)
                 )
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.ADAPTIVE),
@@ -160,23 +126,33 @@ def main(page: ft.Page):
 
     def create_chats_list():
         chats_list = ft.Column(spacing=8)
-        for chat_name, chat_data in chats.items():
-            chat_type_icon = "🔒" if chat_data['type'] == 'private' else "🔓"
+        if not chats:
             chats_list.controls.append(
-                ft.ListTile(
-                    leading=ft.Icon(
-                        ft.Icons.LOCK_OUTLINED if chat_data['type'] == 'private' else ft.Icons.PUBLIC_OUTLINED,
-                        color=ft.Colors.BLUE
-                    ),
-                    title=ft.Text(chat_name),
-                    subtitle=ft.Text(f"{chat_type_icon} {len(chat_data['users'])} участников"),
-                    on_click=lambda e, cn=chat_name: prefill_and_join(cn),
+                ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE, size=48, color=ft.Colors.GREY_400),
+                        ft.Text("Чатов пока нет", size=16, color=ft.Colors.GREY_600),
+                        ft.Text("Создайте первый чат!", size=14, color=ft.Colors.GREY_600),
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=12),
+                    padding=40,
+                    alignment=ft.alignment.center
                 )
             )
+        else:
+            for chat_name, chat_data in chats.items():
+                chat_type_icon = "🔒" if chat_data['type'] == 'private' else "🔓"
+                chats_list.controls.append(
+                    ft.ListTile(
+                        leading=ft.Icon(
+                            ft.Icons.LOCK_OUTLINED if chat_data['type'] == 'private' else ft.Icons.PUBLIC_OUTLINED,
+                            color=ft.Colors.BLUE
+                        ),
+                        title=ft.Text(chat_name),
+                        subtitle=ft.Text(f"{chat_type_icon} {len(chat_data['users'])} участников"),
+                        on_click=lambda e, cn=chat_name: show_join_chat_screen(cn),
+                    )
+                )
         return chats_list
-
-    def prefill_and_join(chat_name):
-        show_join_chat_screen(chat_name)
 
     def show_create_chat_screen():
         page.clean()
@@ -193,8 +169,8 @@ def main(page: ft.Page):
         
         chat_type = ft.RadioGroup(
             content=ft.Column([
-                ft.Radio(value="public", label="🔓 Публичный чат (без пароля для входа)"),
-                ft.Radio(value="private", label="🔒 Приватный чат (требуется пароль для входа)"),
+                ft.Radio(value="public", label="🔓 Публичный чат (без пароля)"),
+                ft.Radio(value="private", label="🔒 Приватный чат (с паролем)"),
             ]),
             value="public"
         )
@@ -289,7 +265,6 @@ def main(page: ft.Page):
                         content=ft.Column([
                             ft.Text("Настройки чата", size=20, weight=ft.FontWeight.W_600),
                             ft.Text("Создайте новый чат для общения", size=14, color=ft.Colors.GREY_600),
-                            ft.Container(height=20),
                             
                             chat_name_input,
                             
@@ -302,7 +277,6 @@ def main(page: ft.Page):
                                    size=12, color=ft.Colors.GREY_600),
                             delete_password_input,
                             
-                            ft.Container(height=20),
                             status_text,
                             
                             ft.Container(
@@ -337,6 +311,11 @@ def main(page: ft.Page):
     def show_join_chat_screen(prefilled_chat_name=None):
         page.clean()
         
+        # Определяем, приватный ли выбранный чат
+        selected_chat_is_private = False
+        if prefilled_chat_name and prefilled_chat_name in chats:
+            selected_chat_is_private = chats[prefilled_chat_name]['type'] == 'private'
+        
         # Поля для входа
         join_chat_name_input = ft.TextField(
             label="Название чата",
@@ -349,13 +328,14 @@ def main(page: ft.Page):
         )
         
         join_chat_password_input = ft.TextField(
-            label="Пароль (если требуется)",
+            label="Пароль для входа",
             password=True,
             border_color=ft.Colors.OUTLINE,
             filled=True,
             bgcolor=ft.Colors.WHITE,
             border_radius=12,
-            text_size=14
+            text_size=14,
+            visible=selected_chat_is_private
         )
         
         user_name_input = ft.TextField(
@@ -368,6 +348,17 @@ def main(page: ft.Page):
         )
         
         status_text = ft.Text("", size=14)
+
+        def update_password_field(e):
+            # Обновляем видимость поля пароля при изменении названия чата
+            chat_name = join_chat_name_input.value.strip()
+            if chat_name in chats:
+                join_chat_password_input.visible = chats[chat_name]['type'] == 'private'
+            else:
+                join_chat_password_input.visible = False
+            page.update()
+
+        join_chat_name_input.on_change = update_password_field
 
         def join_chat(e):
             global current_chat_name, current_user_name
@@ -683,7 +674,7 @@ def main(page: ft.Page):
             
         if chats[current_chat_name]['delete_password'] != input_password:
             delete_status_text.value = "Неверный пароль для удаления"
-            delete_status_text.color = ft.Colors.RED
+            delete_status_text.color =ft.Colors.RED
             page.update()
             return
         
@@ -701,6 +692,7 @@ def main(page: ft.Page):
 if __name__ == "__main__":
 
     ft.app(target=main)
+
 
 
 
